@@ -22,7 +22,6 @@
       background: white;
     }
 
-    /* Always-visible sizing bar */
     .controls {
       position: fixed;
       top: 0;
@@ -41,7 +40,6 @@
       font-size: 14px;
 
       border-bottom: 1px solid rgba(0,0,0,0.12);
-
       white-space: nowrap;
     }
 
@@ -49,7 +47,7 @@
       background: none;
       border: none;
       font-size: 14px;
-      padding: 6px 7px;
+      padding: 6px 9px;
       cursor: pointer;
     }
 
@@ -58,12 +56,10 @@
       text-decoration: underline;
     }
 
-    /* Space so image starts below fixed bar */
     .page {
       padding-top: 45px;
     }
 
-    /* Allows access to image when zoomed wider than screen */
     #guideWrap {
       width: 100%;
       overflow-x: auto;
@@ -85,14 +81,13 @@
 <body>
 
   <div class="controls">
-    View:
-    <button data-size="50">50%</button>
+    <button data-scale="0.67">0.67x</button>
     |
-    <button data-size="75">75%</button>
+    <button data-scale="1" class="active">1x</button>
     |
-    <button data-size="100" class="active">100%</button>
+    <button data-scale="1.33">1.33x</button>
     |
-    <button data-size="125">125%</button>
+    <button data-scale="1.67">1.67x</button>
   </div>
 
   <div class="page">
@@ -112,7 +107,7 @@
     const guideWrap = document.getElementById("guideWrap");
     const buttons = document.querySelectorAll(".controls button");
 
-    let baseSize = 100;
+    let baseScale = 1;
     let pinchScale = 1;
 
     let startDistance = 0;
@@ -122,7 +117,8 @@
     let contentRatio = 0.5;
 
     function updateGuide() {
-      const finalSize = baseSize * pinchScale;
+      const finalScale = baseScale * pinchScale;
+      const finalSize = finalScale * 100;
 
       guide.style.width = finalSize + "%";
 
@@ -135,10 +131,10 @@
       }
     }
 
-    function setView(size) {
-      baseSize = size;
+    function setView(scale) {
+      baseScale = scale;
 
-      /* Every button press resets manual pinch zoom */
+      // Every preset tap resets any manual pinch zoom
       pinchScale = 1;
 
       updateGuide();
@@ -146,11 +142,11 @@
       buttons.forEach(button => {
         button.classList.toggle(
           "active",
-          Number(button.dataset.size) === size
+          Number(button.dataset.scale) === scale
         );
       });
 
-      /* Return horizontal view to center */
+      // Recenter horizontally after selecting a preset
       requestAnimationFrame(() => {
         if (guide.scrollWidth > guideWrap.clientWidth) {
           guideWrap.scrollLeft =
@@ -163,7 +159,7 @@
 
     buttons.forEach(button => {
       button.addEventListener("click", function () {
-        setView(Number(this.dataset.size));
+        setView(Number(this.dataset.scale));
       });
     });
 
@@ -189,7 +185,6 @@
       function(e) {
 
         if (e.touches.length === 2) {
-
           e.preventDefault();
 
           startDistance = distance(e.touches);
@@ -220,17 +215,22 @@
       function(e) {
 
         if (e.touches.length === 2) {
-
           e.preventDefault();
 
           const currentDistance =
             distance(e.touches);
 
-          pinchScale =
-            startScale *
-            (currentDistance / startDistance);
+          const rawRatio =
+            currentDistance / startDistance;
 
-          /* Manual pinch range */
+          // Softer / less touchy pinch zoom
+          const softenedRatio =
+            1 + ((rawRatio - 1) * 0.55);
+
+          pinchScale =
+            startScale * softenedRatio;
+
+          // Manual pinch range
           pinchScale =
             Math.max(
               0.5,
@@ -239,10 +239,8 @@
 
           updateGuide();
 
-          /*
-             Keep the area between your fingers
-             in approximately the same place.
-          */
+          // Keep the area between your fingers
+          // approximately in the same place
           requestAnimationFrame(() => {
 
             const newWidth =
