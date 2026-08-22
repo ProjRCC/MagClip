@@ -42,6 +42,13 @@
 
       border-top: 1px solid rgba(0,0,0,0.12);
       white-space: nowrap;
+
+      transition: opacity 0.35s ease;
+    }
+
+    .controls.hidden {
+      opacity: 0;
+      pointer-events: none;
     }
 
     .controls button {
@@ -102,6 +109,7 @@
   <script>
     const guide = document.getElementById("guide");
     const guideWrap = document.getElementById("guideWrap");
+    const controls = document.querySelector(".controls");
     const buttons = document.querySelectorAll(".controls button");
 
     let baseScale = 1;
@@ -112,6 +120,8 @@
 
     let pinchX = 0;
     let contentRatio = 0.5;
+
+    let hideTimer;
 
     function orientationFactor() {
       return window.innerWidth > window.innerHeight ? 0.5 : 1;
@@ -135,6 +145,8 @@
 
     function setView(scale) {
       baseScale = scale;
+
+      // Every preset tap resets manual pinch zoom
       pinchScale = 1;
 
       updateGuide();
@@ -154,6 +166,8 @@
           guideWrap.scrollLeft = 0;
         }
       });
+
+      showControls();
     }
 
     buttons.forEach(button => {
@@ -182,6 +196,8 @@
     guideWrap.addEventListener(
       "touchstart",
       function(e) {
+
+        showControls();
 
         if (e.touches.length === 2) {
           e.preventDefault();
@@ -212,6 +228,8 @@
     guideWrap.addEventListener(
       "touchmove",
       function(e) {
+
+        showControls();
 
         if (e.touches.length === 2) {
           e.preventDefault();
@@ -253,6 +271,33 @@
       { passive: false }
     );
 
+    function showControls() {
+      controls.classList.remove("hidden");
+
+      clearTimeout(hideTimer);
+
+      hideTimer = setTimeout(() => {
+        controls.classList.add("hidden");
+      }, 1000);
+    }
+
+    document.addEventListener(
+      "touchstart",
+      showControls,
+      { passive: true }
+    );
+
+    document.addEventListener(
+      "touchmove",
+      showControls,
+      { passive: true }
+    );
+
+    document.addEventListener(
+      "click",
+      showControls
+    );
+
     // Re-apply landscape 0.5 factor when phone rotates
     window.addEventListener("resize", function () {
       pinchScale = 1;
@@ -266,7 +311,13 @@
           guideWrap.scrollLeft = 0;
         }
       });
+
+      showControls();
     });
+
+    // Initial display, then fade after 1 second
+    updateGuide();
+    showControls();
 
   </script>
 
