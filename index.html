@@ -145,6 +145,30 @@
     }
 
     function setView(scale) {
+
+      /*
+        Preserve the exact point in the guide that is
+        currently at the top of the screen.
+      */
+
+      const oldRect = guide.getBoundingClientRect();
+      const oldGuideTop =
+        oldRect.top + window.scrollY;
+
+      const oldHeight =
+        oldRect.height;
+
+      let topRatio = 0;
+
+      if (oldHeight > 0) {
+        topRatio =
+          (window.scrollY - oldGuideTop) /
+          oldHeight;
+
+        topRatio =
+          Math.max(0, Math.min(1, topRatio));
+      }
+
       baseScale = scale;
 
       // Every preset tap resets manual pinch zoom
@@ -160,6 +184,25 @@
       });
 
       requestAnimationFrame(() => {
+
+        const newRect =
+          guide.getBoundingClientRect();
+
+        const newGuideTop =
+          newRect.top + window.scrollY;
+
+        const newHeight =
+          newRect.height;
+
+        const newScrollTop =
+          newGuideTop +
+          (topRatio * newHeight);
+
+        window.scrollTo({
+          top: newScrollTop,
+          behavior: "instant"
+        });
+
         if (guide.scrollWidth > guideWrap.clientWidth) {
           guideWrap.scrollLeft =
             (guide.scrollWidth - guideWrap.clientWidth) / 2;
