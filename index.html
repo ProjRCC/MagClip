@@ -24,13 +24,14 @@
 
     .controls {
       position: fixed;
-      top: 0;
+      bottom: 0;
       left: 0;
       right: 0;
       z-index: 1000;
 
       text-align: center;
       padding: 8px;
+      padding-bottom: calc(8px + env(safe-area-inset-bottom));
 
       background: rgba(255,255,255,0.78);
       backdrop-filter: blur(6px);
@@ -39,7 +40,7 @@
       font-family: Arial, sans-serif;
       font-size: 14px;
 
-      border-bottom: 1px solid rgba(0,0,0,0.12);
+      border-top: 1px solid rgba(0,0,0,0.12);
       white-space: nowrap;
     }
 
@@ -57,7 +58,7 @@
     }
 
     .page {
-      padding-top: 45px;
+      padding-bottom: 50px;
     }
 
     #guideWrap {
@@ -80,14 +81,6 @@
 
 <body>
 
-  <div class="controls">
-    <button data-scale="0.75">75%</button>
-    |
-    <button data-scale="1" class="active">100%</button>
-    |
-    <button data-scale="1.25">125%</button>
-  </div>
-
   <div class="page">
     <div id="guideWrap">
       <img
@@ -96,6 +89,14 @@
         alt="Magnetic Load Floor Installation Guide"
       >
     </div>
+  </div>
+
+  <div class="controls">
+    <button data-scale="0.75">75%</button>
+    |
+    <button data-scale="1" class="active">100%</button>
+    |
+    <button data-scale="1.25">125%</button>
   </div>
 
   <script>
@@ -221,6 +222,7 @@
           const rawRatio =
             currentDistance / startDistance;
 
+          // Softer / less touchy pinch zoom
           const softenedRatio =
             1 + ((rawRatio - 1) * 0.55);
 
@@ -236,6 +238,7 @@
           updateGuide();
 
           requestAnimationFrame(() => {
+
             const newWidth =
               guide.getBoundingClientRect().width;
 
@@ -250,7 +253,7 @@
       { passive: false }
     );
 
-    // Re-apply the correct factor when phone rotates
+    // Re-apply landscape 0.5 factor when phone rotates
     window.addEventListener("resize", function () {
       pinchScale = 1;
       updateGuide();
