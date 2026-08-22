@@ -119,21 +119,33 @@
     let startDistance = 0;
     let startScale = 1;
 
-    let pinchX = 0;
-    let contentRatio = 0.5;
+    let anchorRatioX = 0.5;
+    let anchorRatioY = 0.5;
+
+    let anchorScreenX = 0;
+    let anchorScreenY = 0;
 
     let hideTimer;
+    let pinchFrame = null;
+
+    let isLandscape =
+      window.innerWidth > window.innerHeight;
 
     function orientationFactor() {
-      return window.innerWidth > window.innerHeight ? 0.5 : 1;
+      return isLandscape ? 0.5 : 1;
     }
 
     function updateGuide() {
       const factor = orientationFactor();
-      const finalScale = baseScale * factor * pinchScale;
-      const finalSize = finalScale * 100;
 
-      guide.style.width = finalSize + "%";
+      const finalScale =
+        baseScale * factor * pinchScale;
+
+      const finalSize =
+        finalScale * 100;
+
+      guide.style.width =
+        finalSize + "%";
 
       if (finalSize <= 100) {
         guide.style.marginLeft = "auto";
@@ -147,31 +159,28 @@
     function setView(scale) {
 
       /*
-        Preserve the exact point in the guide that is
-        currently at the top of the screen.
+        Preserve whatever part of the guide
+        is currently at the top of the screen.
       */
 
-      const oldRect = guide.getBoundingClientRect();
-      const oldGuideTop =
-        oldRect.top + window.scrollY;
-
-      const oldHeight =
-        oldRect.height;
+      const oldRect =
+        guide.getBoundingClientRect();
 
       let topRatio = 0;
 
-      if (oldHeight > 0) {
+      if (oldRect.height > 0) {
         topRatio =
-          (window.scrollY - oldGuideTop) /
-          oldHeight;
+          (0 - oldRect.top) /
+          oldRect.height;
 
         topRatio =
-          Math.max(0, Math.min(1, topRatio));
+          Math.max(
+            0,
+            Math.min(1, topRatio)
+          );
       }
 
       baseScale = scale;
-
-      // Every preset tap resets manual pinch zoom
       pinchScale = 1;
 
       updateGuide();
@@ -188,24 +197,26 @@
         const newRect =
           guide.getBoundingClientRect();
 
-        const newGuideTop =
-          newRect.top + window.scrollY;
+        const desiredTop =
+          -(topRatio * newRect.height);
 
-        const newHeight =
-          newRect.height;
+        const verticalDifference =
+          newRect.top - desiredTop;
 
-        const newScrollTop =
-          newGuideTop +
-          (topRatio * newHeight);
+        window.scrollBy(
+          0,
+          verticalDifference
+        );
 
-        window.scrollTo({
-          top: newScrollTop,
-          behavior: "instant"
-        });
-
-        if (guide.scrollWidth > guideWrap.clientWidth) {
+        if (
+          guide.scrollWidth >
+          guideWrap.clientWidth
+        ) {
           guideWrap.scrollLeft =
-            (guide.scrollWidth - guideWrap.clientWidth) / 2;
+            (
+              guide.scrollWidth -
+              guideWrap.clientWidth
+            ) / 2;
         } else {
           guideWrap.scrollLeft = 0;
         }
@@ -215,26 +226,44 @@
     }
 
     buttons.forEach(button => {
-      button.addEventListener("click", function () {
-        setView(Number(this.dataset.scale));
-      });
+      button.addEventListener(
+        "click",
+        function () {
+          setView(
+            Number(this.dataset.scale)
+          );
+        }
+      );
     });
 
     function distance(touches) {
       const dx =
-        touches[0].clientX - touches[1].clientX;
+        touches[0].clientX -
+        touches[1].clientX;
 
       const dy =
-        touches[0].clientY - touches[1].clientY;
+        touches[0].clientY -
+        touches[1].clientY;
 
-      return Math.sqrt(dx * dx + dy * dy);
+      return Math.sqrt(
+        dx * dx + dy * dy
+      );
     }
 
-    function midpointX(touches) {
-      return (
-        touches[0].clientX +
-        touches[1].clientX
-      ) / 2;
+    function midpoint(touches) {
+      return {
+        x:
+          (
+            touches[0].clientX +
+            touches[1].clientX
+          ) / 2,
+
+        y:
+          (
+            touches[0].clientY +
+            touches[1].clientY
+          ) / 2
+      };
     }
 
     guideWrap.addEventListener(
@@ -246,24 +275,47 @@
         if (e.touches.length === 2) {
           e.preventDefault();
 
-          startDistance = distance(e.touches);
-          startScale = pinchScale;
+          startDistance =
+            distance(e.touches);
+
+          startScale =
+            pinchScale;
+
+          const mid =
+            midpoint(e.touches);
+
+          anchorScreenX =
+            mid.x;
+
+          anchorScreenY =
+            mid.y;
 
           const rect =
-            guideWrap.getBoundingClientRect();
+            guide.getBoundingClientRect();
 
-          pinchX =
-            midpointX(e.touches) - rect.left;
+          anchorRatioX =
+            (
+              anchorScreenX -
+              rect.left
+            ) / rect.width;
 
-          const currentWidth =
-            guide.getBoundingClientRect().width;
+          anchorRatioY =
+            (
+              anchorScreenY -
+              rect.top
+            ) / rect.height;
 
-          contentRatio =
-            (guideWrap.scrollLeft + pinchX) /
-            currentWidth;
+          anchorRatioX =
+            Math.max(
+              0,
+              Math.min(1, anchorRatioX)
+            );
 
-          contentRatio =
-            Math.max(0, Math.min(1, contentRatio));
+          anchorRatioY =
+            Math.max(
+              0,
+              Math.min(1, anchorRatioY)
+            );
         }
       },
       { passive: false }
@@ -282,47 +334,125 @@
             distance(e.touches);
 
           const rawRatio =
-            currentDistance / startDistance;
+            currentDistance /
+            startDistance;
 
-          // Softer / less touchy pinch zoom
+          /*
+            Softer pinch sensitivity.
+          */
           const softenedRatio =
-            1 + ((rawRatio - 1) * 0.55);
+            1 +
+            (
+              (rawRatio - 1) *
+              0.55
+            );
 
           pinchScale =
-            startScale * softenedRatio;
+            startScale *
+            softenedRatio;
 
           pinchScale =
             Math.max(
               0.5,
-              Math.min(pinchScale, 4)
+              Math.min(
+                pinchScale,
+                4
+              )
             );
+
+          /*
+            Update anchor to current finger
+            position as fingers move.
+          */
+
+          const mid =
+            midpoint(e.touches);
+
+          anchorScreenX =
+            mid.x;
+
+          anchorScreenY =
+            mid.y;
 
           updateGuide();
 
-          requestAnimationFrame(() => {
+          if (pinchFrame) {
+            cancelAnimationFrame(
+              pinchFrame
+            );
+          }
 
-            const newWidth =
-              guide.getBoundingClientRect().width;
+          pinchFrame =
+            requestAnimationFrame(() => {
 
-            const targetScroll =
-              contentRatio * newWidth - pinchX;
+              const newRect =
+                guide.getBoundingClientRect();
 
-            guideWrap.scrollLeft =
-              Math.max(0, targetScroll);
-          });
+              /*
+                Find where the anchored point
+                ended up after resizing.
+              */
+
+              const actualX =
+                newRect.left +
+                (
+                  anchorRatioX *
+                  newRect.width
+                );
+
+              const actualY =
+                newRect.top +
+                (
+                  anchorRatioY *
+                  newRect.height
+                );
+
+              /*
+                Move horizontally so the same
+                point remains under the fingers.
+              */
+
+              const deltaX =
+                actualX -
+                anchorScreenX;
+
+              guideWrap.scrollLeft +=
+                deltaX;
+
+              /*
+                Move vertically so the same
+                point remains under the fingers.
+              */
+
+              const deltaY =
+                actualY -
+                anchorScreenY;
+
+              window.scrollBy(
+                0,
+                deltaY
+              );
+
+              pinchFrame = null;
+            });
         }
       },
       { passive: false }
     );
 
     function showControls() {
-      controls.classList.remove("hidden");
+      controls.classList.remove(
+        "hidden"
+      );
 
       clearTimeout(hideTimer);
 
-      hideTimer = setTimeout(() => {
-        controls.classList.add("hidden");
-      }, 1000);
+      hideTimer =
+        setTimeout(() => {
+          controls.classList.add(
+            "hidden"
+          );
+        }, 1000);
     }
 
     document.addEventListener(
@@ -342,24 +472,57 @@
       showControls
     );
 
-    // Landscape automatically applies a 0.5 factor
-    window.addEventListener("resize", function () {
-      pinchScale = 1;
-      updateGuide();
+    /*
+      IMPORTANT:
+      Mobile browsers fire resize events
+      when their address/navigation bars
+      appear or disappear.
 
-      requestAnimationFrame(() => {
-        if (guide.scrollWidth > guideWrap.clientWidth) {
-          guideWrap.scrollLeft =
-            (guide.scrollWidth - guideWrap.clientWidth) / 2;
-        } else {
-          guideWrap.scrollLeft = 0;
+      Only change scale if the actual
+      orientation changed.
+    */
+
+    window.addEventListener(
+      "resize",
+      function () {
+
+        const newLandscape =
+          window.innerWidth >
+          window.innerHeight;
+
+        if (
+          newLandscape ===
+          isLandscape
+        ) {
+          return;
         }
-      });
 
-      showControls();
-    });
+        isLandscape =
+          newLandscape;
 
-    // Initial display, then fade after 1 second
+        pinchScale = 1;
+
+        updateGuide();
+
+        requestAnimationFrame(() => {
+          if (
+            guide.scrollWidth >
+            guideWrap.clientWidth
+          ) {
+            guideWrap.scrollLeft =
+              (
+                guide.scrollWidth -
+                guideWrap.clientWidth
+              ) / 2;
+          } else {
+            guideWrap.scrollLeft = 0;
+          }
+        });
+
+        showControls();
+      }
+    );
+
     updateGuide();
     showControls();
 
