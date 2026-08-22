@@ -4,9 +4,8 @@
   <meta charset="UTF-8">
 
   <meta
-    id="viewport"
     name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
   >
 
   <title>Magnetic Load Floor Installation Guide</title>
@@ -17,6 +16,7 @@
       padding: 0;
       width: 100%;
       background: white;
+      overflow-x: auto;
     }
 
     .controls {
@@ -36,7 +36,7 @@
       background: none;
       border: none;
       font-size: 14px;
-      padding: 6px 8px;
+      padding: 6px 7px;
       cursor: pointer;
     }
 
@@ -45,11 +45,18 @@
       text-decoration: underline;
     }
 
+    #guideWrap {
+      width: 100%;
+      overflow: visible;
+    }
+
     #guide {
       display: block;
       width: 100%;
       height: auto;
       margin: 0 auto;
+      transform-origin: top left;
+      touch-action: pan-y;
     }
   </style>
 </head>
@@ -67,31 +74,44 @@
     <button data-size="125">125%</button>
   </div>
 
-  <img
-    id="guide"
-    src="magclip.jpg"
-    alt="Magnetic Load Floor Installation Guide"
-  >
+  <div id="guideWrap">
+    <img
+      id="guide"
+      src="magclip.jpg"
+      alt="Magnetic Load Floor Installation Guide"
+    >
+  </div>
 
   <script>
-    const viewport = document.getElementById("viewport");
     const guide = document.getElementById("guide");
     const buttons = document.querySelectorAll(".controls button");
 
-    function resetAndSet(size) {
+    let baseSize = 100;
+    let pinchScale = 1;
 
-      // Force browser pinch zoom back to 1x
-      viewport.setAttribute(
-        "content",
-        "width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"
-      );
+    let startDistance = 0;
+    let startScale = 1;
 
-      document.body.offsetHeight;
+    function updateGuide() {
+      const finalSize = baseSize * pinchScale;
 
-      // Apply selected guide size
-      guide.style.width = size + "%";
+      guide.style.width = finalSize + "%";
 
-      // Update active selection
+      if (finalSize <= 100) {
+        guide.style.marginLeft = "auto";
+        guide.style.marginRight = "auto";
+      } else {
+        guide.style.marginLeft = "0";
+        guide.style.marginRight = "0";
+      }
+    }
+
+    function setView(size) {
+      baseSize = size;
+      pinchScale = 1;
+
+      updateGuide();
+
       buttons.forEach(button => {
         button.classList.toggle(
           "active",
@@ -99,23 +119,47 @@
         );
       });
 
-      // Reset horizontal position
-      window.scrollTo(0, window.scrollY);
-
-      // Re-enable pinch zoom
-      setTimeout(() => {
-        viewport.setAttribute(
-          "content",
-          "width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes"
-        );
-      }, 300);
+      window.scrollTo({
+        left: 0,
+        top: window.scrollY
+      });
     }
 
     buttons.forEach(button => {
       button.addEventListener("click", function () {
-        resetAndSet(Number(this.dataset.size));
+        setView(Number(this.dataset.size));
       });
     });
+
+    function getDistance(touches) {
+      const dx = touches[0].clientX - touches[1].clientX;
+      const dy = touches[0].clientY - touches[1].clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    guide.addEventListener("touchstart", function(e) {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+
+        startDistance = getDistance(e.touches);
+        startScale = pinchScale;
+      }
+    }, { passive: false });
+
+    guide.addEventListener("touchmove", function(e) {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+
+        const currentDistance = getDistance(e.touches);
+
+        pinchScale =
+          startScale * (currentDistance / startDistance);
+
+        pinchScale = Math.max(0.5, Math.min(pinchScale, 4));
+
+        updateGuide();
+      }
+    }, { passive: false });
   </script>
 
 </body>
