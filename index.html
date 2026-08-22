@@ -89,7 +89,6 @@
   </div>
 
   <div class="page">
-
     <div id="guideWrap">
       <img
         id="guide"
@@ -97,7 +96,6 @@
         alt="Magnetic Load Floor Installation Guide"
       >
     </div>
-
   </div>
 
   <script>
@@ -114,8 +112,13 @@
     let pinchX = 0;
     let contentRatio = 0.5;
 
+    function orientationFactor() {
+      return window.innerWidth > window.innerHeight ? 0.5 : 1;
+    }
+
     function updateGuide() {
-      const finalScale = baseScale * pinchScale;
+      const factor = orientationFactor();
+      const finalScale = baseScale * factor * pinchScale;
       const finalSize = finalScale * 100;
 
       guide.style.width = finalSize + "%";
@@ -218,7 +221,6 @@
           const rawRatio =
             currentDistance / startDistance;
 
-          // Softer pinch sensitivity
           const softenedRatio =
             1 + ((rawRatio - 1) * 0.55);
 
@@ -234,7 +236,6 @@
           updateGuide();
 
           requestAnimationFrame(() => {
-
             const newWidth =
               guide.getBoundingClientRect().width;
 
@@ -248,6 +249,21 @@
       },
       { passive: false }
     );
+
+    // Re-apply the correct factor when phone rotates
+    window.addEventListener("resize", function () {
+      pinchScale = 1;
+      updateGuide();
+
+      requestAnimationFrame(() => {
+        if (guide.scrollWidth > guideWrap.clientWidth) {
+          guideWrap.scrollLeft =
+            (guide.scrollWidth - guideWrap.clientWidth) / 2;
+        } else {
+          guideWrap.scrollLeft = 0;
+        }
+      });
+    });
 
   </script>
 
