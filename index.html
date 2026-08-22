@@ -47,7 +47,7 @@
       background: none;
       border: none;
       font-size: 14px;
-      padding: 6px 9px;
+      padding: 6px 12px;
       cursor: pointer;
     }
 
@@ -81,13 +81,11 @@
 <body>
 
   <div class="controls">
-    <button data-scale="0.67">0.67x</button>
+    <button data-scale="0.75">75%</button>
     |
-    <button data-scale="1" class="active">1x</button>
+    <button data-scale="1" class="active">100%</button>
     |
-    <button data-scale="1.33">1.33x</button>
-    |
-    <button data-scale="1.67">1.67x</button>
+    <button data-scale="1.25">125%</button>
   </div>
 
   <div class="page">
@@ -133,8 +131,6 @@
 
     function setView(scale) {
       baseScale = scale;
-
-      // Every preset tap resets any manual pinch zoom
       pinchScale = 1;
 
       updateGuide();
@@ -146,7 +142,6 @@
         );
       });
 
-      // Recenter horizontally after selecting a preset
       requestAnimationFrame(() => {
         if (guide.scrollWidth > guideWrap.clientWidth) {
           guideWrap.scrollLeft =
@@ -223,14 +218,13 @@
           const rawRatio =
             currentDistance / startDistance;
 
-          // Softer / less touchy pinch zoom
+          // Softer pinch sensitivity
           const softenedRatio =
             1 + ((rawRatio - 1) * 0.55);
 
           pinchScale =
             startScale * softenedRatio;
 
-          // Manual pinch range
           pinchScale =
             Math.max(
               0.5,
@@ -239,8 +233,6 @@
 
           updateGuide();
 
-          // Keep the area between your fingers
-          // approximately in the same place
           requestAnimationFrame(() => {
 
             const newWidth =
