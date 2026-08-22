@@ -13,18 +13,70 @@
       background: white;
     }
 
-    img {
+    .controls {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      text-align: center;
+      padding: 8px;
+      background: rgba(255,255,255,0.95);
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .controls button {
+      background: none;
+      border: none;
+      font-size: 14px;
+      padding: 6px 10px;
+      cursor: pointer;
+    }
+
+    .controls button.active {
+      font-weight: bold;
+      text-decoration: underline;
+    }
+
+    #guide {
       display: block;
       width: 100%;
       height: auto;
-      margin: 0;
-      padding: 0;
+      margin: 0 auto;
     }
   </style>
 </head>
 
 <body>
-  <img src="magclip.jpg" alt="Magnetic Load Floor Installation Guide">
+
+  <div class="controls">
+    View:
+    <button id="full" class="active">100%</button>
+    |
+    <button id="compact">75%</button>
+  </div>
+
+  <img id="guide"
+       src="magclip.jpg"
+       alt="Magnetic Load Floor Installation Guide">
+
+  <script>
+    const guide = document.getElementById("guide");
+    const full = document.getElementById("full");
+    const compact = document.getElementById("compact");
+
+    full.onclick = function () {
+      guide.style.width = "100%";
+      full.classList.add("active");
+      compact.classList.remove("active");
+    };
+
+    compact.onclick = function () {
+      guide.style.width = "75%";
+      compact.classList.add("active");
+      full.classList.remove("active");
+    };
+  </script>
+
 </body>
 </html>
-
