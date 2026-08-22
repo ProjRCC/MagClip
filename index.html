@@ -2,7 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta
+    id="viewport"
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
   <title>Magnetic Load Floor Installation Guide</title>
 
   <style>
@@ -56,22 +62,45 @@
     <button id="compact">75%</button>
   </div>
 
-  <img id="guide"
-       src="magclip.jpg"
-       alt="Magnetic Load Floor Installation Guide">
+  <img
+    id="guide"
+    src="magclip.jpg"
+    alt="Magnetic Load Floor Installation Guide"
+  >
 
   <script>
     const guide = document.getElementById("guide");
     const full = document.getElementById("full");
     const compact = document.getElementById("compact");
+    const viewport = document.getElementById("viewport");
+
+    function resetPinchZoom() {
+      // Temporarily force the browser back to 1× zoom
+      viewport.setAttribute(
+        "content",
+        "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      );
+
+      // Restore normal pinch-to-zoom immediately afterward
+      setTimeout(() => {
+        viewport.setAttribute(
+          "content",
+          "width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes"
+        );
+      }, 100);
+    }
 
     full.onclick = function () {
+      resetPinchZoom();
+
       guide.style.width = "100%";
       full.classList.add("active");
       compact.classList.remove("active");
     };
 
     compact.onclick = function () {
+      resetPinchZoom();
+
       guide.style.width = "75%";
       compact.classList.add("active");
       full.classList.remove("active");
