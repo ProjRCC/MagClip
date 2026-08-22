@@ -4,9 +4,8 @@
   <meta charset="UTF-8">
 
   <meta
-    id="viewport"
     name="viewport"
-    content="width=device-width, initial-scale=1.0"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
   >
 
   <title>Magnetic Load Floor Installation Guide</title>
@@ -17,15 +16,16 @@
       padding: 0;
       width: 100%;
       background: white;
+      overflow-x: auto;
     }
 
     .controls {
       position: sticky;
       top: 0;
-      z-index: 10;
+      z-index: 1000;
       text-align: center;
       padding: 8px;
-      background: rgba(255,255,255,0.95);
+      background: rgba(255,255,255,0.96);
       font-family: Arial, sans-serif;
       font-size: 14px;
       border-bottom: 1px solid #ddd;
@@ -44,11 +44,17 @@
       text-decoration: underline;
     }
 
+    #guideWrap {
+      width: 100%;
+      overflow: visible;
+    }
+
     #guide {
       display: block;
       width: 100%;
       height: auto;
       margin: 0 auto;
+      touch-action: pan-y;
     }
   </style>
 </head>
@@ -62,49 +68,91 @@
     <button id="compact">75%</button>
   </div>
 
-  <img
-    id="guide"
-    src="magclip.jpg"
-    alt="Magnetic Load Floor Installation Guide"
-  >
+  <div id="guideWrap">
+    <img
+      id="guide"
+      src="magclip.jpg"
+      alt="Magnetic Load Floor Installation Guide"
+    >
+  </div>
 
   <script>
     const guide = document.getElementById("guide");
     const full = document.getElementById("full");
     const compact = document.getElementById("compact");
-    const viewport = document.getElementById("viewport");
 
-    function resetPinchZoom() {
-      // Temporarily force the browser back to 1× zoom
-      viewport.setAttribute(
-        "content",
-        "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-      );
+    let baseSize = 100;
+    let zoom = 1;
 
-      // Restore normal pinch-to-zoom immediately afterward
-      setTimeout(() => {
-        viewport.setAttribute(
-          "content",
-          "width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes"
-        );
-      }, 100);
+    let startDistance = 0;
+    let startZoom = 1;
+
+    function updateGuide() {
+      const width = baseSize * zoom;
+      guide.style.width = width + "%";
+
+      if (width <= 100) {
+        guide.style.marginLeft = "auto";
+        guide.style.marginRight = "auto";
+      } else {
+        guide.style.marginLeft = "0";
+        guide.style.marginRight = "0";
+      }
     }
 
-    full.onclick = function () {
-      resetPinchZoom();
+    function setView(size) {
+      baseSize = size;
+      zoom = 1;
 
-      guide.style.width = "100%";
-      full.classList.add("active");
-      compact.classList.remove("active");
-    };
+      updateGuide();
 
-    compact.onclick = function () {
-      resetPinchZoom();
+      full.classList.toggle("active", size === 100);
+      compact.classList.toggle("active", size === 75);
 
-      guide.style.width = "75%";
-      compact.classList.add("active");
-      full.classList.remove("active");
-    };
+      window.scrollTo({
+        left: 0,
+        top: window.scrollY,
+        behavior: "instant"
+      });
+    }
+
+    full.addEventListener("click", () => {
+      setView(100);
+    });
+
+    compact.addEventListener("click", () => {
+      setView(75);
+    });
+
+    function distance(touches) {
+      const x = touches[0].clientX - touches[1].clientX;
+      const y = touches[0].clientY - touches[1].clientY;
+      return Math.sqrt(x * x + y * y);
+    }
+
+    guide.addEventListener("touchstart", function(e) {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+
+        startDistance = distance(e.touches);
+        startZoom = zoom;
+      }
+    }, { passive: false });
+
+    guide.addEventListener("touchmove", function(e) {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+
+        const currentDistance = distance(e.touches);
+
+        zoom = startZoom * (currentDistance / startDistance);
+
+        zoom = Math.max(0.75, Math.min(zoom, 4));
+
+        updateGuide();
+      }
+    }, { passive: false });
+
   </script>
 
 </body>
